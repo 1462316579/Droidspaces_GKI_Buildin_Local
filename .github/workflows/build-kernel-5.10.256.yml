@@ -2,10 +2,6 @@ name: Build GKI Kernel 5.10.256 (Android 12)
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/build-kernel-5.10.256.yml'
     inputs:
       kernel_version:
         description: 'Kernel version (e.g., 256)'
