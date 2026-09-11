@@ -2,10 +2,14 @@ name: Build GKI Kernel 5.10.256 (Android 12)
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-kernel-5.10.256.yml'
     inputs:
       kernel_version:
         description: 'Kernel version (e.g., 256)'
-        required: true
+        required: false
         default: '256'
       ksu_variant:
         description: 'KernelSU variant (None, Official, ReSukiSU)'
@@ -56,8 +60,9 @@ on:
 
 jobs:
   build:
-    name: Build Kernel 5.10.${{ github.event.inputs.kernel_version }}
+    name: Build Kernel 5.10.${{ github.event.inputs.kernel_version || '256' }}
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.event.head_commit.message != 'Initial commit')
     timeout-minutes: 360
     permissions:
       contents: write
