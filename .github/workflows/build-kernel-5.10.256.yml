@@ -1,0 +1,107 @@
+name: Build GKI Kernel 5.10.256 (Android 12)
+
+on:
+  workflow_dispatch:
+    inputs:
+      kernel_version:
+        description: 'Kernel version'
+        required: false
+        default: '256'
+      ksu_variant:
+        description: 'KernelSU variant'
+        required: false
+        default: 'None'
+      droidspaces:
+        description: 'Droidspaces slot'
+        required: false
+        default: '678'
+
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build Kernel
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout build scripts
+        uses: actions/checkout@v4
+        with:
+          repository: 404-GCross/Droidspaces_GKI_Buildin_Local
+          path: build-scripts
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            git curl make gcc g++ build-essential libssl-dev \
+            bison flex libelf-dev dwarves ccache python3 \
+            clang lld bc rsync cpio perl patch zip gawk zstd
+
+      - name: Setup ccache
+        run: |
+          ccache --max-size=5G
+          ccache --set-config=compression=true
+
+      - name: Download kernel source
+        id: download
+        run: |
+          set -e
+          SUB_LEVEL="${{ inputs.kernel_version || '256' }}"
+          RELEASE_TAG="all-kernel-sources-20260608-27112872553"
+          REPO="404-GCross/GKI-Kernel-Source_Fetch"
+          BASE="https://github.com/${REPO}/releases/download/${RELEASE_TAG}"
+          ARCHIVE="kernel-source-android12-5.10-${SUB_LEVEL}.tar.gz"
+
+          curl -fSL -o "${ARCHIVE}.sha256" "${BASE}/${ARCHIVE}.sha256"
+          curl -fSL -o "${ARCHIVE}.partaa" "${BASE}/${ARCHIVE}.partaa"
+          curl -fSL -o "${ARCHIVE}.partab" "${BASE}/${ARCHIVE}.partab" 2>/dev/null || true
+
+          cat "${ARCHIVE}"*.part* > "${ARCHIVE}" 2>/dev/null || \
+          cat "${ARCHIVE}.partaa" "${ARCHIVE}.partab" > "${ARCHIVE}"
+          sha256sum -c "${ARCHIVE}.sha256" --quiet
+
+          tar -xzf "${ARCHIVE}"
+          echo "source=${PWD}/kernel-source-android12-5.10-${SUB_LEVEL}" >> $GITHUB_OUTPUT
+
+      - name: Configure build
+        run: |
+          cd build-scripts
+          cat > .build_config << EOF
+          APP_LANG=zh
+          ANDROID_VERSION=android12
+          KERNEL_VERSION=5.10
+          SUB_LEVEL=${{ inputs.kernel_version || '256' }}
+          OS_PATCH_LEVEL=2026-07
+          KSU_VARIANT=${{ inputs.ksu_variant || 'None' }}
+          KSU_BRANCH=Stable(标准)
+          CUSTOM_VERSION=
+          BUILD_TIME=
+          USE_ZRAM=false
+          USE_KPM=disabled
+          USE_REKERNEL=false
+          CVE_2026_43499_PATCH=false
+          DROIDSPACES=${{ inputs.droidspaces || '678' }}
+          KERNEL_SOURCE=${{ steps.download.outputs.source }}
+          OUTPUT_DIR=${{ github.workspace }}/build/out
+          PACKAGE_BOOT=true
+          EOF
+          cat .build_config
+
+      - name: Build kernel
+        run: |
+          cd build-scripts
+          chmod +x build_kernel.sh
+          ./build_kernel.sh --quick
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-5.10-${{ inputs.kernel_version || '256' }}-${{ inputs.droidspaces || '678' }}
+          path: |
+            build-scripts/build/out/*.zip
+            build-scripts/build/out/Image
+          retention-days: 30
