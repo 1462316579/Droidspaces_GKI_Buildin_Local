@@ -30,15 +30,15 @@ on:
         default: false
         type: boolean
       droidspaces:
-        description: 'Droidspaces slot (off, 678, 123, 345)'
-        required: false
-        default: 'off'
+        description: 'Droidspaces slot (必须选择槽位！off/678/123/345)'
+        required: true
+        default: '678'
         type: choice
         options:
-          - off
           - 678
           - 123
           - 345
+          - off
       use_rekernel:
         description: 'Enable Re-Kernel driver'
         required: false
@@ -87,7 +87,7 @@ jobs:
           ccache --set-config=compression=true
           echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
 
-      - name: Download kernel source 5.10.${{ github.event.inputs.kernel_version }}
+      - name: Download kernel source 5.10.${{ inputs.kernel_version }}
         id: download_source
         run: |
           set -euo pipefail
@@ -147,18 +147,18 @@ jobs:
 APP_LANG=zh
 ANDROID_VERSION=android12
 KERNEL_VERSION=5.10
-SUB_LEVEL=${{ github.event.inputs.kernel_version }}
+SUB_LEVEL=${{ inputs.kernel_version }}
 OS_PATCH_LEVEL=2026-07
 REVISION=
-KSU_VARIANT=${{ github.event.inputs.ksu_variant }}
-KSU_BRANCH=${{ github.event.inputs.ksu_branch }}
-CUSTOM_VERSION=${{ github.event.inputs.custom_version }}
+KSU_VARIANT=${{ inputs.ksu_variant }}
+KSU_BRANCH=${{ inputs.ksu_branch }}
+CUSTOM_VERSION=${{ inputs.custom_version }}
 BUILD_TIME=
-USE_ZRAM=${{ github.event.inputs.use_zram }}
+USE_ZRAM=${{ inputs.use_zram }}
 USE_KPM=disabled
-USE_REKERNEL=${{ github.event.inputs.use_rekernel }}
-CVE_2026_43499_PATCH=${{ github.event.inputs.cve_patch }}
-DROIDSPACES=${{ github.event.inputs.droidspaces }}
+USE_REKERNEL=${{ inputs.use_rekernel }}
+CVE_2026_43499_PATCH=${{ inputs.cve_patch }}
+DROIDSPACES=${{ inputs.droidspaces }}
 KERNEL_SOURCE=${{ steps.download_source.outputs.kernel_source }}
 OUTPUT_DIR=${{ github.workspace }}/build/out
 PACKAGE_BOOT=true
@@ -200,7 +200,7 @@ EOF
             - **KSU Variant**: ${{ inputs.ksu_variant }}
             - **KSU Branch**: ${{ inputs.ksu_branch }}
             - **ZRAM LZ4**: ${{ inputs.use_zram }}
-            - **Droidspaces**: ${{ inputs.droidspaces }}
+            - **Droidspaces Slot**: ${{ inputs.droidspaces }}
             - **Re-Kernel**: ${{ inputs.use_rekernel }}
             - **CVE-2026-43499 Patch**: ${{ inputs.cve_patch }}
             - **Custom Version**: ${{ inputs.custom_version || 'default' }}
