@@ -60,9 +60,8 @@ on:
 
 jobs:
   build:
-    name: Build Kernel 5.10.${{ github.event.inputs.kernel_version || '256' }}
+    name: Build Kernel 5.10.${{ inputs.kernel_version || '256' }}
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.event.head_commit.message != 'Initial commit')
     timeout-minutes: 360
     permissions:
       contents: write
