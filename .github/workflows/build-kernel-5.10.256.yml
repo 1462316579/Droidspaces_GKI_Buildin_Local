@@ -60,7 +60,8 @@ on:
 
 jobs:
   build:
-    name: Build Kernel 5.10.${{ inputs.kernel_version || '256' }}
+    if: github.event_name == 'workflow_dispatch'
+    name: Build Kernel 5.10.${{ inputs.kernel_version }}
     runs-on: ubuntu-latest
     timeout-minutes: 360
     permissions:
@@ -94,7 +95,7 @@ jobs:
         id: download_source
         run: |
           set -euo pipefail
-          SUB_LEVEL="${{ github.event.inputs.kernel_version }}"
+          SUB_LEVEL="${{ inputs.kernel_version }}"
           
           # Release tag containing android12-5.10-256
           RELEASE_TAG="all-kernel-sources-20260608-27112872553"
@@ -181,7 +182,7 @@ EOF
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kernel-5.10-${{ github.event.inputs.kernel_version }}-${{ github.event.inputs.ksu_variant }}-${{ github.event.inputs.droidspaces }}
+          name: kernel-5.10-${{ inputs.kernel_version }}-${{ inputs.ksu_variant }}-${{ inputs.droidspaces }}
           path: |
             build-scripts/build/out/*.zip
             build-scripts/build/out/Image
@@ -192,22 +193,22 @@ EOF
         if: success()
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: kernel-5.10-${{ github.event.inputs.kernel_version }}-${{ github.run_number }}
-          name: "GKI 5.10.${{ github.event.inputs.kernel_version }} (Android 12)"
+          tag_name: kernel-5.10-${{ inputs.kernel_version }}-${{ github.run_number }}
+          name: "GKI 5.10.${{ inputs.kernel_version }} (Android 12)"
           body: |
             ## GKI Kernel Build
-            
+
             - **Android Version**: 12
-            - **Kernel Version**: 5.10.${{ github.event.inputs.kernel_version }}
+            - **Kernel Version**: 5.10.${{ inputs.kernel_version }}
             - **Patch Level**: 2026-07
-            - **KSU Variant**: ${{ github.event.inputs.ksu_variant }}
-            - **KSU Branch**: ${{ github.event.inputs.ksu_branch }}
-            - **ZRAM LZ4**: ${{ github.event.inputs.use_zram }}
-            - **Droidspaces**: ${{ github.event.inputs.droidspaces }}
-            - **Re-Kernel**: ${{ github.event.inputs.use_rekernel }}
-            - **CVE-2026-43499 Patch**: ${{ github.event.inputs.cve_patch }}
-            - **Custom Version**: ${{ github.event.inputs.custom_version || 'default' }}
-            
+            - **KSU Variant**: ${{ inputs.ksu_variant }}
+            - **KSU Branch**: ${{ inputs.ksu_branch }}
+            - **ZRAM LZ4**: ${{ inputs.use_zram }}
+            - **Droidspaces**: ${{ inputs.droidspaces }}
+            - **Re-Kernel**: ${{ inputs.use_rekernel }}
+            - **CVE-2026-43499 Patch**: ${{ inputs.cve_patch }}
+            - **Custom Version**: ${{ inputs.custom_version || 'default' }}
+
             Built on: ${{ github.run_id }}
           files: |
             build-scripts/build/out/*.zip
